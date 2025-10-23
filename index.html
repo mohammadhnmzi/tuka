@@ -78,7 +78,68 @@
       .gallery{grid-template-columns:1fr}
       .hero-visual{aspect-ratio:auto;height:280px}
     }
-  </style>
+  
+  /* === ✨ Enhancements v2 === */
+  :root{
+    --glass: color-mix(in oklab, var(--bg) 75%, transparent);
+    --glass-border: color-mix(in oklab, var(--muted) 22%, transparent);
+    --glow: 0 20px 60px -25px var(--ring);
+  }
+  html, body, .card, header, .hero-visual { transition: background-color .35s ease, color .35s ease, border-color .35s ease; }
+  img, .btn, .card, .gallery img { transition: transform .25s ease, box-shadow .25s ease, filter .25s ease, opacity .25s ease; }
+
+  header{
+    backdrop-filter: saturate(160%) blur(14px);
+    background: linear-gradient(180deg, color-mix(in oklab, var(--bg) 84%, transparent), color-mix(in oklab, var(--bg) 70%, transparent));
+    border-bottom: 1px solid var(--glass-border);
+  }
+  .nav { padding: .75rem 0; }
+  .logo:hover { filter: drop-shadow(0 6px 22px var(--ring)); transform: translateY(-1px); }
+
+  .btn{ box-shadow: var(--glow); }
+  .btn:hover{ transform: translateY(-2px) scale(1.02); }
+  .btn:active{ transform: translateY(0) scale(.99); }
+
+  .card{
+    box-shadow: 0 1px 0 color-mix(in oklab,var(--muted) 10%, transparent), var(--glow);
+    position: relative;
+    overflow: clip;
+  }
+  .card::before{
+    content:""; position:absolute; inset:-1px; border-radius:inherit;
+    background: radial-gradient(120% 90% at 10% 0%, color-mix(in oklab, var(--brand) 8%, transparent), transparent 40%);
+    opacity:.5; pointer-events:none;
+  }
+  .card:hover{ transform: translateY(-2px); }
+
+  .gallery img:hover{ transform: translateY(-4px) scale(1.02); box-shadow: 0 24px 50px -30px var(--ring); }
+
+  .hero-visual{ will-change: transform; transform-style: preserve-3d; }
+  .hero-visual .parallax-glow{
+    position:absolute; inset:auto -30% -35% -30%;
+    height:65%;
+    background: radial-gradient(60% 120% at 50% 100%, color-mix(in oklab,var(--brand) 14%, transparent), transparent);
+    filter: blur(20px);
+  }
+
+  .reveal{ opacity:0; transform: translateY(14px) scale(.98); }
+  .reveal.show{ opacity:1; transform: none; transition: opacity .65s cubic-bezier(.2,.7,.1,1), transform .65s cubic-bezier(.2,.7,.1,1); }
+  section.reveal:nth-of-type(odd).show{ transition-delay: .08s; }
+  section.reveal:nth-of-type(even).show{ transition-delay: .16s; }
+
+  .menu a{ position:relative; }
+  .menu a.active::after{
+    content:""; position:absolute; left:12px; right:12px; bottom:4px; height:2px;
+    background: linear-gradient(90deg, var(--brand), var(--accent));
+    border-radius:2px;
+  }
+
+  @media (prefers-reduced-motion: reduce){
+    *{ animation: none !important; transition: none !important; }
+    .reveal{ opacity:1 !important; transform:none !important; }
+  }
+
+</style>
 </head>
 <body>
   <header>
@@ -293,5 +354,88 @@
       html.setAttribute('data-theme', current === 'dark' ? 'light' : 'dark');
     });
   </script>
+<script>
+
+  /* === ✨ Enhancements v2 === */
+  ;(function(){
+    const root = document.documentElement;
+
+    // 1) Scroll Reveal
+    const io = ('IntersectionObserver' in window) ? new IntersectionObserver((entries)=>{
+      entries.forEach(e=>{ if(e.isIntersecting){ e.target.classList.add('show'); io.unobserve(e.target); } });
+    },{threshold:.15}) : null;
+    const revealTargets = Array.from(document.querySelectorAll('section, .card, .gallery img, .kpi .pill'));
+    revealTargets.forEach(el => { el.classList.add('reveal'); if(io) io.observe(el); });
+
+    // 2) Parallax (mouse tilt removed; only subtle scroll translate)
+    const hero = document.querySelector('.hero-visual');
+    if(hero){
+      window.addEventListener('scroll', ()=>{
+        const t = window.scrollY * 0.06;
+        hero.style.transform = `translateY(${t}px)`;
+      }, {passive:true});
+      if(!hero.querySelector('.parallax-glow')){
+        const glow = document.createElement('div');
+        glow.className = 'parallax-glow';
+        hero.appendChild(glow);
+      }
+    }
+
+    // 3) Ensure mode toggle exists
+    let modeBtn = document.querySelector('.mode');
+    if(!modeBtn){
+      const nav = document.querySelector('header .nav');
+      if(nav){
+        modeBtn = document.createElement('button');
+        modeBtn.className = 'mode';
+        modeBtn.type = 'button';
+        modeBtn.textContent = '🌓 Mode';
+        nav.appendChild(modeBtn);
+      }
+    }
+
+    // 4) Theme toggle + persistence
+    const applyTheme = (theme) => {
+      root.setAttribute('data-theme', theme);
+      localStorage.setItem('tuka-theme', theme);
+    };
+    const saved = localStorage.getItem('tuka-theme');
+    if(saved){ applyTheme(saved); }
+
+    if(modeBtn){
+      const setLabel = (theme)=>{
+        modeBtn.setAttribute('aria-label', theme === 'dark' ? 'Switch to light mode' : 'Switch to dark mode');
+        modeBtn.title = modeBtn.getAttribute('aria-label');
+      };
+      setLabel(root.getAttribute('data-theme')||'dark');
+      modeBtn.addEventListener('click', ()=>{
+        const current = root.getAttribute('data-theme') || 'dark';
+        const next = current === 'dark' ? 'light' : 'dark';
+        applyTheme(next);
+        setLabel(next);
+      });
+    }
+
+    // 5) ScrollSpy
+    const sections = Array.from(document.querySelectorAll('section[id]'));
+    const menuLinks = Array.from(document.querySelectorAll('.menu a[href^="#"]'));
+    if('IntersectionObserver' in window && sections.length){
+      const spy = new IntersectionObserver((entries)=>{
+        entries.forEach(entry=>{
+          const id = entry.target.getAttribute('id');
+          const link = document.querySelector(`.menu a[href="#${id}"]`);
+          if(link){
+            if(entry.isIntersecting){
+              menuLinks.forEach(a=>a.classList.remove('active'));
+              link.classList.add('active');
+            }
+          }
+        });
+      }, { rootMargin: "-35% 0px -55% 0px" });
+      sections.forEach(s=>spy.observe(s));
+    }
+  })();
+
+</script>
 </body>
 </html>
