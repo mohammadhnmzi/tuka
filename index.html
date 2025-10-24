@@ -346,96 +346,50 @@
     </div>
   </footer>
 
+  
+
+
   <script>
-    const btn = document.getElementById('modeBtn');
-    btn.addEventListener('click', () => {
-      const html = document.documentElement;
-      const current = html.getAttribute('data-theme') || 'dark';
-      html.setAttribute('data-theme', current === 'dark' ? 'light' : 'dark');
-    });
-  </script>
-<script>
-
-  /* === ✨ Enhancements v2 === */
-  ;(function(){
-    const root = document.documentElement;
-
-    // 1) Scroll Reveal
-    const io = ('IntersectionObserver' in window) ? new IntersectionObserver((entries)=>{
-      entries.forEach(e=>{ if(e.isIntersecting){ e.target.classList.add('show'); io.unobserve(e.target); } });
-    },{threshold:.15}) : null;
-    const revealTargets = Array.from(document.querySelectorAll('section, .card, .gallery img, .kpi .pill'));
-    revealTargets.forEach(el => { el.classList.add('reveal'); if(io) io.observe(el); });
-
-    // 2) Parallax (mouse tilt removed; only subtle scroll translate)
-    const hero = document.querySelector('.hero-visual');
-    if(hero){
-      window.addEventListener('scroll', ()=>{
-        const t = window.scrollY * 0.06;
-        hero.style.transform = `translateY(${t}px)`;
-      }, {passive:true});
-      if(!hero.querySelector('.parallax-glow')){
-        const glow = document.createElement('div');
-        glow.className = 'parallax-glow';
-        hero.appendChild(glow);
-      }
-    }
-
-    // 3) Ensure mode toggle exists
-    let modeBtn = document.querySelector('.mode');
-    if(!modeBtn){
-      const nav = document.querySelector('header .nav');
-      if(nav){
-        modeBtn = document.createElement('button');
-        modeBtn.className = 'mode';
-        modeBtn.type = 'button';
-        modeBtn.textContent = '🌓 Mode';
-        nav.appendChild(modeBtn);
-      }
-    }
-
-    // 4) Theme toggle + persistence
-    const applyTheme = (theme) => {
+  (function(){
+    var root = document.documentElement;
+    var nav = document.querySelector('nav .menu') || document.querySelector('.menu') || document.body;
+    function applyTheme(theme){
+      if(theme !== 'light' && theme !== 'dark'){ theme = 'dark'; }
       root.setAttribute('data-theme', theme);
-      localStorage.setItem('tuka-theme', theme);
-    };
-    const saved = localStorage.getItem('tuka-theme');
-    if(saved){ applyTheme(saved); }
+      try{ localStorage.setItem('tuka-theme', theme); }catch(e){}
+    }
+    // initialize theme from storage
+    var saved = null;
+    try{ saved = localStorage.getItem('tuka-theme'); }catch(e){ saved = null; }
+    applyTheme(saved || (root.getAttribute('data-theme') || 'dark'));
 
-    if(modeBtn){
-      const setLabel = (theme)=>{
-        modeBtn.setAttribute('aria-label', theme === 'dark' ? 'Switch to light mode' : 'Switch to dark mode');
-        modeBtn.title = modeBtn.getAttribute('aria-label');
-      };
-      setLabel(root.getAttribute('data-theme')||'dark');
-      modeBtn.addEventListener('click', ()=>{
-        const current = root.getAttribute('data-theme') || 'dark';
-        const next = current === 'dark' ? 'light' : 'dark';
-        applyTheme(next);
-        setLabel(next);
-      });
+    // ensure button exists
+    var btn = document.getElementById('modeBtn');
+    if(!btn){
+      btn = document.createElement('button');
+      btn.id = 'modeBtn';
+      btn.className = 'mode';
+      btn.type = 'button';
+      btn.textContent = '🌓 Mode';
+      nav.appendChild(btn);
     }
 
-    // 5) ScrollSpy
-    const sections = Array.from(document.querySelectorAll('section[id]'));
-    const menuLinks = Array.from(document.querySelectorAll('.menu a[href^="#"]'));
-    if('IntersectionObserver' in window && sections.length){
-      const spy = new IntersectionObserver((entries)=>{
-        entries.forEach(entry=>{
-          const id = entry.target.getAttribute('id');
-          const link = document.querySelector(`.menu a[href="#${id}"]`);
-          if(link){
-            if(entry.isIntersecting){
-              menuLinks.forEach(a=>a.classList.remove('active'));
-              link.classList.add('active');
-            }
-          }
-        });
-      }, { rootMargin: "-35% 0px -55% 0px" });
-      sections.forEach(s=>spy.observe(s));
+    function setLabel(theme){
+      var label = (theme === 'dark') ? 'Switch to light mode' : 'Switch to dark mode';
+      btn.setAttribute('aria-label', label);
+      btn.title = label;
     }
+    setLabel(root.getAttribute('data-theme') || 'dark');
+
+    btn.addEventListener('click', function(e){
+      e.preventDefault();
+      var current = root.getAttribute('data-theme') || 'dark';
+      var next = (current === 'dark') ? 'light' : 'dark';
+      applyTheme(next);
+      setLabel(next);
+    });
   })();
+  </script>
 
-</script>
 </body>
 </html>
